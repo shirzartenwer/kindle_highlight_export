@@ -1,8 +1,9 @@
 '''To import my kindle highlight to Readwise'''
-import enum
 import re 
-
-
+import os 
+from typing import Dict, List
+import csv 
+import pandas as pd
 
 def get_kindle_highlights(dict_list, input_file_path, output_file_path):
     with open(input_file_path) as infile, open(output_file_path, 'w') as outfile:
@@ -15,8 +16,13 @@ def get_kindle_highlights(dict_list, input_file_path, output_file_path):
                 last_line_was_seperator = False
                 continue
             elif not last_line_was_blank and line.startswith("-"):
-                location = re.search('- (.*)|', line)
-                time = re.search('|(.*)', line)
+                # Location and date are not yet properly separated.
+                start = "-"
+                middle = "|"
+                location = line[len(start):-len(middle)]
+                time = line[len(middle):]
+                # location = re.search('- (.*)|', line).group(1)
+                # time = re.search('|(.*)', line).group(1)
                 out_put_header["Location"].append(location)
                 out_put_header["Date"].append(time)
                 last_line_was_blank = False
@@ -29,7 +35,7 @@ def get_kindle_highlights(dict_list, input_file_path, output_file_path):
                 last_line_was_info = False
                 continue
             elif last_line_was_blank:
-                out_put_header["Highlights"].append(line)
+                out_put_header["Highlight"].append(line)
                 last_line_was_blank = False
                 continue     
             elif line.strip() == "==========":
@@ -40,7 +46,7 @@ def get_kindle_highlights(dict_list, input_file_path, output_file_path):
                 
 
 if __name__ == "__main__":
-    out_put_header = {"Highlights": [],
+    out_put_header = {"Highlight": [],
                   "Title": [],
                   "Author": [],
                   "URL": [],
@@ -52,6 +58,8 @@ if __name__ == "__main__":
     result_dict_list = get_kindle_highlights(out_put_header, input_file_path, output_intermediate)
     print("Today is amazing!")
     
+    df = pd.DataFrame.from_dict(result_dict_list, orient='index').transpose()
+    df.to_csv("../../kindle_highlights.csv", ";", header=True, index=False)
     ### check if the output format is correct
     file = open(input_file_path, "r")
     nr_highlights = file.read().count("==========")
